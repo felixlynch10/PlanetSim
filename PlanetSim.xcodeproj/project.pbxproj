@@ -17,6 +17,8 @@
 		AA000008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB000008; };
 		AA000009 /* LaunchState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000011; };
 		AA000010 /* LaunchPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000012; };
+		AA000013 /* OnboardingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000013; };
+		AA000014 /* ScenarioPresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB000014; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +34,8 @@
 		AB000010 /* PlanetSim.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PlanetSim.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB000011 /* LaunchState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchState.swift; sourceTree = "<group>"; };
 		AB000012 /* LaunchPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchPanelView.swift; sourceTree = "<group>"; };
+		AB000013 /* OnboardingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingOverlay.swift; sourceTree = "<group>"; };
+		AB000014 /* ScenarioPresets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenarioPresets.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,6 +76,7 @@
 				AB000003 /* CelestialBody.swift */,
 				AB000004 /* SolarSystemData.swift */,
 				AB000011 /* LaunchState.swift */,
+				AB000014 /* ScenarioPresets.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -91,6 +96,7 @@
 				AB000006 /* OrbitCanvasView.swift */,
 				AB000007 /* SidebarView.swift */,
 				AB000012 /* LaunchPanelView.swift */,
+				AB000013 /* OnboardingOverlay.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -181,6 +187,8 @@
 				AA000007 /* SidebarView.swift in Sources */,
 				AA000009 /* LaunchState.swift in Sources */,
 				AA000010 /* LaunchPanelView.swift in Sources */,
+				AA000013 /* OnboardingOverlay.swift in Sources */,
+				AA000014 /* ScenarioPresets.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

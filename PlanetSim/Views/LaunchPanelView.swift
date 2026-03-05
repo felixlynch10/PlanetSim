@@ -19,6 +19,13 @@ struct LaunchPanelView: View {
         )
     }
 
+    private var logThroat: Binding<Double> {
+        Binding(
+            get: { log10(launchState.objectThroatRadius) },
+            set: { launchState.objectThroatRadius = pow(10, $0) }
+        )
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Toggle button
@@ -47,6 +54,22 @@ struct LaunchPanelView: View {
             .buttonStyle(.plain)
 
             if launchState.isActive {
+                // Body type picker
+                Picker("Type", selection: $launchState.objectType) {
+                    ForEach(BodyType.allCases) { type in
+                        Text(type.rawValue).tag(type)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: launchState.objectType) { _ in
+                    launchState.applyTypeDefaults()
+                    if launchState.objectType == .wormhole {
+                        launchState.wormholePlacementPhase = .placingFirst
+                    } else {
+                        launchState.wormholePlacementPhase = .none
+                    }
+                }
+
                 // Name
                 TextField("Name", text: $launchState.objectName)
                     .textFieldStyle(.plain)
@@ -55,12 +78,12 @@ struct LaunchPanelView: View {
                     .background(Color.white.opacity(0.08))
                     .clipShape(RoundedRectangle(cornerRadius: 6))
 
-                // Mass slider
+                // Mass slider (extended range for black holes)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Mass: \(massLabel)")
                         .font(.system(size: 11))
                         .foregroundColor(.white.opacity(0.6))
-                    Slider(value: logMass, in: 15...28, step: 0.5)
+                    Slider(value: logMass, in: 15...38, step: 0.5)
                 }
 
                 // Size slider
@@ -69,6 +92,16 @@ struct LaunchPanelView: View {
                         .font(.system(size: 11))
                         .foregroundColor(.white.opacity(0.6))
                     Slider(value: $launchState.objectDisplayRadius, in: 1...10)
+                }
+
+                // Throat radius for wormholes
+                if launchState.objectType == .wormhole {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Throat Radius: \(String(format: "%.0f Mkm", launchState.objectThroatRadius / 1e9))")
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.6))
+                        Slider(value: logThroat, in: 9...10.7, step: 0.1)
+                    }
                 }
 
                 // Color presets
@@ -88,9 +121,24 @@ struct LaunchPanelView: View {
                 }
 
                 // Instructions
-                Text("Click on canvas to place, drag to aim")
-                    .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.4))
+                if launchState.objectType == .wormhole {
+                    switch launchState.wormholePlacementPhase {
+                    case .placingFirst:
+                        Text("Click to place entry portal")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.cyan.opacity(0.8))
+                    case .placingSecond(_, let name):
+                        Text("Now place exit portal for \(name)")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.cyan.opacity(0.8))
+                    case .none:
+                        EmptyView()
+                    }
+                } else {
+                    Text("Click on canvas to place, drag to aim")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.4))
+                }
             }
         }
         .padding(.horizontal, 16)
