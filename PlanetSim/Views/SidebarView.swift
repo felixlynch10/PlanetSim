@@ -6,6 +6,7 @@ struct SidebarView: View {
     @Binding var selectedPlanet: Int?
     @ObservedObject var launchState: LaunchState
     @Binding var followingBody: Int?
+    @Binding var zoomToBodyIndex: Int?
     @State private var searchText = ""
     @State private var expandedBody: Int? = nil
     @State private var selectedScenario: Int = 0
@@ -139,6 +140,24 @@ struct SidebarView: View {
                                     expandedBody = expandedBody == item.index ? nil : item.index
                                 }
                             },
+                            onTrack: {
+                                if followingBody == item.index {
+                                    followingBody = nil
+                                } else {
+                                    followingBody = item.index
+                                    zoomToBodyIndex = item.index
+                                }
+                            },
+                            onDelete: {
+                                let idx = item.index
+                                if followingBody == idx { followingBody = nil }
+                                else if let f = followingBody, f > idx { followingBody = f - 1 }
+                                if selectedPlanet == idx { selectedPlanet = nil }
+                                else if let s = selectedPlanet, s > idx { selectedPlanet = s - 1 }
+                                if expandedBody == idx { expandedBody = nil }
+                                else if let e = expandedBody, e > idx { expandedBody = e - 1 }
+                                simulation.removeBody(at: idx)
+                            },
                             followingBody: $followingBody
                         )
                     }
@@ -163,6 +182,8 @@ struct BodyRowView: View {
     let isExpanded: Bool
     let onTap: () -> Void
     let onToggleExpand: () -> Void
+    var onTrack: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
     var followingBody: Binding<Int?>? = nil
 
     private var body_: CelestialBody? {
@@ -197,6 +218,25 @@ struct BodyRowView: View {
                     }
 
                     Spacer()
+
+                    if let onTrack = onTrack {
+                        let isTracking = followingBody?.wrappedValue == index
+                        Button(action: onTrack) {
+                            Image(systemName: "scope")
+                                .font(.system(size: 11))
+                                .foregroundColor(isTracking ? Color(red: 0.30, green: 0.50, blue: 0.90) : .white.opacity(0.3))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if let onDelete = onDelete {
+                        Button(action: onDelete) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 11))
+                                .foregroundColor(.white.opacity(0.3))
+                        }
+                        .buttonStyle(.plain)
+                    }
 
                     Text(String(format: "%.1f Mkm", body_.distanceMillionKm))
                         .font(.system(size: 11))
@@ -312,27 +352,6 @@ struct BodyRowView: View {
                                         .foregroundColor(.white.opacity(0.7))
                                 }
                             }
-                        }
-
-                        // Follow button
-                        if let followBinding = followingBody {
-                            let isFollowing = followBinding.wrappedValue == index
-                            Button(action: {
-                                followBinding.wrappedValue = isFollowing ? nil : index
-                            }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: isFollowing ? "location.fill" : "location")
-                                        .font(.system(size: 10))
-                                    Text(isFollowing ? "Following" : "Follow")
-                                        .font(.system(size: 11, weight: .medium))
-                                }
-                                .foregroundColor(isFollowing ? Color(red: 0.30, green: 0.50, blue: 0.90) : .white.opacity(0.5))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 5)
-                                .background(isFollowing ? Color(red: 0.30, green: 0.50, blue: 0.90).opacity(0.15) : Color.white.opacity(0.05))
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
-                            }
-                            .buttonStyle(.plain)
                         }
 
                         // Exotic object details

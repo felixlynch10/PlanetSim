@@ -497,6 +497,14 @@ final class GravitySimulation: ObservableObject {
         trailPoints3D.append([])
     }
 
+    func removeBody(at index: Int) {
+        guard index < bodies.count else { return }
+        bodies.remove(at: index)
+        if index < trailPoints3D.count {
+            trailPoints3D.remove(at: index)
+        }
+    }
+
     func computeTrajectoryPreview(newBody: CelestialBody, steps: Int = 300, stepDt: Double = 86400) -> [SIMD3<Double>] {
         var simBodies = bodies.map { (position: $0.position, velocity: $0.velocity, mass: $0.mass) }
         simBodies.append((position: newBody.position, velocity: newBody.velocity, mass: newBody.mass))

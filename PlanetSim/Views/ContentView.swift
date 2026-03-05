@@ -5,6 +5,7 @@ struct ContentView: View {
     @StateObject private var launchState = LaunchState()
     @State private var selectedPlanet: Int? = nil
     @State private var followingBody: Int? = nil
+    @State private var zoomToBodyIndex: Int? = nil
     @AppStorage("showLabels") private var showLabels: Bool = true
     @AppStorage("showForceVectors") private var showForceVectors: Bool = false
     @AppStorage("showOrbits") private var showOrbits: Bool = false
@@ -19,7 +20,8 @@ struct ContentView: View {
                 simulation: simulation,
                 selectedPlanet: $selectedPlanet,
                 launchState: launchState,
-                followingBody: $followingBody
+                followingBody: $followingBody,
+                zoomToBodyIndex: $zoomToBodyIndex
             )
 
             ZStack {
@@ -28,6 +30,7 @@ struct ContentView: View {
                     selectedPlanet: $selectedPlanet,
                     launchState: launchState,
                     followingBody: $followingBody,
+                    zoomToBodyIndex: $zoomToBodyIndex,
                     showLabels: $showLabels,
                     showForceVectors: $showForceVectors,
                     showOrbits: $showOrbits

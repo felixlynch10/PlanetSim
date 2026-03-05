@@ -6,6 +6,7 @@ struct OrbitCanvasView: View {
     @Binding var selectedPlanet: Int?
     @ObservedObject var launchState: LaunchState
     @Binding var followingBody: Int?
+    @Binding var zoomToBodyIndex: Int?
     @Binding var showLabels: Bool
     @Binding var showForceVectors: Bool
     @Binding var showOrbits: Bool
@@ -13,6 +14,7 @@ struct OrbitCanvasView: View {
     @State private var pitch: Double = -0.55
     @State private var yaw: Double = 0.15
     @State private var logZoom: Double = 0.0
+    @State private var trackingPulseTime: Double = 0
 
     private var zoom: Double { exp(logZoom) }
     private let baseMetersPerPoint: Double = 1.496e11 * 0.07
@@ -84,6 +86,29 @@ struct OrbitCanvasView: View {
                     }
                 }
 
+                // Tracking indicator
+                if let trackedIdx = followingBody, trackedIdx < simulation.bodies.count {
+                    let trackedBody = simulation.bodies[trackedIdx]
+                    let tsp = project(trackedBody.position, center: center, mpp: mpp, followOffset: followOffset)
+                    let projR = CGFloat(trackedBody.displayRadius * 3e5 / mpp)
+                    let bodyR = max(trackedBody.displayRadius * 0.4, projR)
+                    let bracketDist = bodyR * 2.5 + 6
+                    let bracketLen = bracketDist * 0.4
+                    let pulseAlpha = 0.4 + 0.15 * sin(trackingPulseTime * 2)
+                    let bracketColor = Color(red: 0.30, green: 0.50, blue: 0.90).opacity(pulseAlpha)
+
+                    // Four L-shaped corner brackets
+                    for (dx, dy) in [(-1.0, -1.0), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0)] {
+                        let cx = tsp.x + CGFloat(dx) * bracketDist
+                        let cy = tsp.y + CGFloat(dy) * bracketDist
+                        var path = Path()
+                        path.move(to: CGPoint(x: cx, y: cy - CGFloat(dy) * bracketLen))
+                        path.addLine(to: CGPoint(x: cx, y: cy))
+                        path.addLine(to: CGPoint(x: cx - CGFloat(dx) * bracketLen, y: cy))
+                        context.stroke(path, with: .color(bracketColor), lineWidth: 1.5)
+                    }
+                }
+
                 // Force vectors
                 if showForceVectors {
                     let accels = simulation.computeAccelerations()
@@ -102,6 +127,21 @@ struct OrbitCanvasView: View {
                 }
             }
             .background(Color(red: 0.102, green: 0.090, blue: 0.078))
+            .onReceive(Timer.publish(every: 1.0/30.0, on: .main, in: .common).autoconnect()) { _ in
+                if followingBody != nil {
+                    trackingPulseTime += 1.0/30.0
+                }
+            }
+            .onChange(of: zoomToBodyIndex) { newIdx in
+                guard let idx = newIdx, idx < simulation.bodies.count else { return }
+                let body = simulation.bodies[idx]
+                let targetZoom = log(max(1.0, 3e5 * body.displayRadius / (baseMetersPerPoint * 0.02)))
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    logZoom = targetZoom
+                }
+                followingBody = idx
+                zoomToBodyIndex = nil
+            }
             .overlay(
                 InputCaptureView(
                     onScroll: { delta in
