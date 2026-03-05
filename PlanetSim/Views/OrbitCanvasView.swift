@@ -33,7 +33,7 @@ struct OrbitCanvasView: View {
                     idx < simulation.bodies.count ? simulation.bodies[idx].position : nil
                 } ?? .zero
 
-                drawDiagonalGrid(context: context, size: size)
+                drawSpacetimeGrid(context: context, size: size, center: center, mpp: mpp, followOffset: followOffset)
 
                 // Draw orbit predictions
                 if showOrbits {
@@ -380,24 +380,76 @@ struct OrbitCanvasView: View {
 
     // MARK: - Drawing
 
-    private func drawDiagonalGrid(context: GraphicsContext, size: CGSize) {
-        let spacing: CGFloat = 50
-        let color = Color(red: 0.165, green: 0.145, blue: 0.125).opacity(0.7)
-        let maxDim = max(size.width, size.height) * 2
+    private func drawSpacetimeGrid(context: GraphicsContext, size: CGSize,
+                                    center: CGPoint, mpp: Double,
+                                    followOffset: SIMD3<Double>) {
+        let gridCount = 40 // lines in each direction from center
+        let gridSpacing = mpp * 80 // world-space distance between grid lines
 
-        var offset: CGFloat = -maxDim
-        while offset < maxDim {
-            var path = Path()
-            path.move(to: CGPoint(x: offset, y: 0))
-            path.addLine(to: CGPoint(x: offset + size.height, y: size.height))
-            context.stroke(path, with: .color(color), lineWidth: 0.5)
+        // Center grid on follow target, snapped to prevent sliding
+        let snapX = round(followOffset.x / gridSpacing) * gridSpacing
+        let snapY = round(followOffset.y / gridSpacing) * gridSpacing
 
-            var path2 = Path()
-            path2.move(to: CGPoint(x: offset, y: 0))
-            path2.addLine(to: CGPoint(x: offset - size.height, y: size.height))
-            context.stroke(path2, with: .color(color), lineWidth: 0.5)
+        let totalLines = gridCount * 2 + 1
 
-            offset += spacing
+        // Generate grid points with gravitational z-depression
+        var gridPoints: [[SIMD3<Double>]] = Array(
+            repeating: Array(repeating: SIMD3<Double>.zero, count: totalLines),
+            count: totalLines
+        )
+
+        for row in 0..<totalLines {
+            for col in 0..<totalLines {
+                let wx = snapX + Double(col - gridCount) * gridSpacing
+                let wy = snapY + Double(row - gridCount) * gridSpacing
+                var wz = 0.0
+
+                // Gravitational depression from all bodies
+                for body in simulation.bodies {
+                    let dx = wx - body.position.x
+                    let dy = wy - body.position.y
+                    let dist = sqrt(dx * dx + dy * dy)
+                    let massRatio = body.mass / 2e30
+                    let rInfluence = max(gridSpacing * 3, sqrt(massRatio) * gridSpacing * 5)
+                    let depression = massRatio * gridSpacing * 0.8 / (1.0 + dist / rInfluence)
+                    wz -= depression
+                }
+
+                gridPoints[row][col] = SIMD3<Double>(wx, wy, wz)
+            }
+        }
+
+        // Draw grid lines
+        // Draw rows (horizontal lines)
+        for row in 0..<totalLines {
+            for col in 0..<(totalLines - 1) {
+                let p0 = project(gridPoints[row][col], center: center, mpp: mpp, followOffset: followOffset)
+                let p1 = project(gridPoints[row][col + 1], center: center, mpp: mpp, followOffset: followOffset)
+
+                let depth = abs(gridPoints[row][col].z + gridPoints[row][col + 1].z) * 0.5
+                let brightness = min(0.5, 0.12 + depth / (gridSpacing * 5))
+
+                var seg = Path()
+                seg.move(to: p0)
+                seg.addLine(to: p1)
+                context.stroke(seg, with: .color(Color(red: 0.22, green: 0.20, blue: 0.18).opacity(brightness)), lineWidth: 0.6)
+            }
+        }
+
+        // Draw columns (vertical lines)
+        for col in 0..<totalLines {
+            for row in 0..<(totalLines - 1) {
+                let p0 = project(gridPoints[row][col], center: center, mpp: mpp, followOffset: followOffset)
+                let p1 = project(gridPoints[row + 1][col], center: center, mpp: mpp, followOffset: followOffset)
+
+                let depth = abs(gridPoints[row][col].z + gridPoints[row + 1][col].z) * 0.5
+                let brightness = min(0.5, 0.12 + depth / (gridSpacing * 5))
+
+                var seg = Path()
+                seg.move(to: p0)
+                seg.addLine(to: p1)
+                context.stroke(seg, with: .color(Color(red: 0.22, green: 0.20, blue: 0.18).opacity(brightness)), lineWidth: 0.6)
+            }
         }
     }
 
